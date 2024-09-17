@@ -1,0 +1,102 @@
+#include <ESP8266WiFi.h>
+#include <LiquidCrystal.h>
+
+// Define pins for LCD (without I2C converter)
+const int rs = 5, en = 4, d4 = 0, d5 = 2, d6 = 14, d7 = 12;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7); // Initialize the LCD interface
+
+// Replace with your network credentials
+const char* ssid = "YourSSID";       // WiFi SSID
+const char* password = "YourPassword"; // WiFi password
+
+WiFiServer server(80);               // Start web server on port 80
+
+String noticeMessage = "Welcome!";   // Initial notice board message
+
+void setup() {
+  // Initialize Serial Monitor for debugging
+  Serial.begin(115200);
+
+  // Initialize the LCD and print the default message
+  lcd.begin(16, 2);                 // Set up the LCD's number of columns and rows
+  lcd.clear();
+  lcd.print(noticeMessage);         // Display initial message
+
+  // Connect to Wi-Fi
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());     // Show the IP address of the ESP8266
+
+  // Start the server
+  server.begin();
+  Serial.println("Server started");
+}
+
+void loop() {
+  // Check if a client has connected
+  WiFiClient client = server.available();
+  if (!client) {
+    return;
+  }
+
+  Serial.println("New client");
+  String currentLine = "";  // Store incoming data from client
+  String newMessage = "";   // Store the new message
+
+  while (client.connected()) {
+    if (client.available()) {
+      char c = client.read();
+      Serial.write(c);
+      if (c == '\n') {
+        // If the current line is blank, the HTTP request has ended
+        if (currentLine.length() == 0) {
+          // Send a standard HTTP response
+          client.println("HTTP/1.1 200 OK");
+          client.println("Content-type:text/html");
+          client.println();
+
+          // HTML form for user input
+          client.println("<!DOCTYPE html><html>");
+          client.println("<body><h1>Smart Notice Board</h1>");
+          client.println("<form action=\"/\" method=\"GET\">");
+          client.println("Enter new message: <input type=\"text\" name=\"message\"><br>");
+          client.println("<input type=\"submit\" value=\"Update\"></form>");
+          client.println("<p>Current message: " + noticeMessage + "</p>");
+          client.println("</body></html>");
+
+          // The HTTP response ends with another blank line
+          client.println();
+          break;
+        } else {  // Analyze HTTP GET request to find the new message
+          if (currentLine.startsWith("GET /?message=")) {
+            int messageStart = currentLine.indexOf('=') + 1;
+            int messageEnd = currentLine.indexOf(' ', messageStart);
+            newMessage = currentLine.substring(messageStart, messageEnd);
+            newMessage.replace('+', ' ');  // Replace '+' with space
+            noticeMessage = newMessage;    // Update the notice board message
+            lcd.clear();
+            lcd.print(noticeMessage);      // Display the new message on the LCD
+          }
+          currentLine = "";
+        }
+      } else if (c != '\r') {
+        currentLine += c;  // Add character to the current line
+      }
+    }
+  }
+
+  // Close the connection
+  client.stop();
+  Serial.println("Client disconnected");
+}
