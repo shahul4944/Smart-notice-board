@@ -1,0 +1,36 @@
+Hardware Connections:
+
+You’ll need to connect the LCD to the ESP8266 using multiple GPIO pins. The following example assumes you’re using a 16x2 or 20x4 LCD display with an HD44780 driver in 4-bit mode.
+
+Pin Mapping:
+
+	•	RS (Register Select) → GPIO 5 (D1 on NodeMCU)
+	•	E (Enable) → GPIO 4 (D2 on NodeMCU)
+	•	D4 → GPIO 0 (D3 on NodeMCU)
+	•	D5 → GPIO 2 (D4 on NodeMCU)
+	•	D6 → GPIO 14 (D5 on NodeMCU)
+	•	D7 → GPIO 12 (D6 on NodeMCU)
+	•	VSS, RW connected to GND, and VDD connected to 5V.
+
+
+How it Works:
+
+	1.	The ESP8266 connects to your WiFi network and starts a simple web server.
+	2.	When you access the ESP8266’s IP address in a web browser (e.g., http://192.168.x.x), a form is presented where you can enter a new message.
+	3.	When you submit the form, the ESP8266 receives the new message and displays it on the LCD.
+	4.	The web page also shows the current message on the notice board.
+
+Key Components in the Code:
+
+	•	LiquidCrystal Library: This handles communication between the ESP8266 and the LCD. You must connect the LCD using 4-bit mode (RS, EN, D4-D7).
+	•	WiFiServer: This creates a web server that listens for incoming connections on port 80 (HTTP).
+	•	Form Handling: The ESP8266 reads HTTP GET requests from the web form, extracts the message, and updates the LCD.
+
+How to Use:
+
+	1.	Upload the code to your ESP8266 using the Arduino IDE.
+	2.	Connect your ESP8266 to the WiFi network.
+	3.	Open a browser and type the ESP8266’s IP address (shown in the Serial Monitor) to access the web interface.
+	4.	Type a new message in the form and click “Update” to change the text displayed on the LCD notice board.
+
+This project provides a simple and effective way to update the content of your smart notice board remotely using only a web browser and your ESP8266.
